@@ -206,7 +206,8 @@ export async function scanToken(
       deployer_address: basescan.deployer_address || goplus.creator_address,
       deployer_contract_count: basescan.deployer_contract_count,
       deployer_age_days: basescan.deployer_age_days,
-      flags: [...new Set([...goplus.flags, ...basescan.flags])],
+      flags: [...new Set([...goplus.flags, ...basescan.flags])]
+        .filter(f => !(f === 'fake_token' && goplus.holder_count >= 1000)), // suppress GoPlus false positive
     };
   }
 
@@ -241,8 +242,10 @@ function generateVerdict(
     if (goplus.is_open_source && !goplus.is_proxy && !goplus.has_mint_function) {
       parts.push('Contract is clean and verified.');
     } else {
-      const issues = goplus.flags.slice(0, 3).join(', ');
-      if (issues) parts.push(`Contract flags: ${issues}.`);
+      const displayFlags = goplus.flags
+        .filter(f => !(f === 'fake_token' && goplus.holder_count >= 1000))
+        .slice(0, 3);
+      if (displayFlags.length > 0) parts.push(`Contract flags: ${displayFlags.join(', ')}.`);
     }
   }
 
