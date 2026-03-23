@@ -181,6 +181,9 @@ async function main(): Promise<void> {
 }
 
 main().catch((e) => {
-  log.error('Fatal error', e);
+  log.error('Fatal error', e?.message ?? e);
+  if (e?.stack) log.error('Stack:', e.stack);
+  if (e?.cause) log.error('Cause:', e.cause);
+  console.error('Full error:', JSON.stringify(e, Object.getOwnPropertyNames(e), 2));
   process.exit(1);
 });
