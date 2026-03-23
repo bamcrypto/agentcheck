@@ -217,7 +217,20 @@ export function computeOverallRisk(
   const deployer = scoreDeployerReputation(basescan);
   const market = scoreMarketSignals(dex);
 
-  const overall = Math.round(
+  // ─── Collect critical flags FIRST (before computing score) ──────
+  const criticalFlags: string[] = [];
+  if (goplus.is_honeypot) criticalFlags.push('HONEYPOT');
+  if (goplus.is_airdrop_scam) criticalFlags.push('AIRDROP_SCAM');
+  if (!goplus.is_true_token && goplus.available && goplus.holder_count < 1000) criticalFlags.push('FAKE_TOKEN');
+  if (goplus.sell_tax > 50) criticalFlags.push('EXTREME_SELL_TAX');
+  if (goplus.buy_tax > 50) criticalFlags.push('EXTREME_BUY_TAX');
+  // owner_can_change_balance is only critical for small tokens — large protocols often have this by design
+  if (goplus.owner_can_change_balance && goplus.holder_count < 5000) criticalFlags.push('OWNER_CAN_DRAIN');
+  if (dex.total_liquidity_usd < 500 && dex.available) criticalFlags.push('NO_LIQUIDITY');
+  if (dex.total_liquidity_usd < 5000 && dex.available && goplus.holder_count < 50) criticalFlags.push('MICRO_CAP_RISK');
+
+  // ─── Compute weighted average ─────────────────────────────────
+  let overall = Math.round(
     contract.score * 0.40 +
     liquidity.score * 0.20 +
     holders.score * 0.15 +
@@ -225,7 +238,33 @@ export function computeOverallRisk(
     market.score * 0.10,
   );
 
-  // Determine level
+  // ─── CRITICAL: Score must reflect actual danger ───────────────
+  // If ANY dimension hits catastrophic levels, enforce a floor
+  const worstDimension = Math.max(contract.score, liquidity.score, holders.score, deployer.score, market.score);
+  if (worstDimension >= 90) {
+    overall = Math.max(overall, 75); // at least AVOID territory
+  }
+
+  // Critical flags FORCE the score up — score must match the danger
+  if (criticalFlags.length >= 3) {
+    overall = Math.max(overall, 95); // multiple critical = near-certain scam
+  } else if (criticalFlags.length === 2) {
+    overall = Math.max(overall, 88); // two critical flags = very dangerous
+  } else if (criticalFlags.length === 1) {
+    overall = Math.max(overall, 80); // one critical flag = avoid
+  }
+
+  // Specific combos that scream rug
+  const isLikelyRug =
+    (criticalFlags.includes('FAKE_TOKEN') || criticalFlags.includes('HONEYPOT')) &&
+    (criticalFlags.includes('NO_LIQUIDITY') || goplus.holder_count < 50);
+  if (isLikelyRug) {
+    overall = Math.max(overall, 95);
+  }
+
+  overall = Math.min(100, overall);
+
+  // ─── Determine level (must be consistent with score) ──────────
   let level: RiskScore['level'];
   let recommendation: string;
   if (overall <= 25) {
@@ -242,17 +281,9 @@ export function computeOverallRisk(
     recommendation = 'Critical risk factors detected. Strongly advise against interaction.';
   }
 
-  // Collect critical flags (instant-avoid triggers)
-  const criticalFlags: string[] = [];
-  if (goplus.is_honeypot) criticalFlags.push('HONEYPOT');
-  if (goplus.is_airdrop_scam) criticalFlags.push('AIRDROP_SCAM');
-  if (!goplus.is_true_token && goplus.available && goplus.holder_count < 1000) criticalFlags.push('FAKE_TOKEN');
-  if (goplus.sell_tax > 50) criticalFlags.push('EXTREME_SELL_TAX');
-  if (dex.total_liquidity_usd < 500 && dex.available) criticalFlags.push('NO_LIQUIDITY');
-
   if (criticalFlags.length > 0) {
-    level = 'AVOID';
-    recommendation = `CRITICAL: ${criticalFlags.join(', ')} detected. Do not interact.`;
+    level = 'AVOID'; // always AVOID with any critical flag
+    recommendation = `⛔ CRITICAL: ${criticalFlags.join(', ')} detected. Do not interact with this token.`;
   }
 
   return {

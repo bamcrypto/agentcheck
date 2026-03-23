@@ -187,21 +187,28 @@ function computeDeployerRisk(
   const criticalFlags: string[] = [];
   const warningFlags: string[] = [];
 
-  // GoPlus critical flags
+  // GoPlus critical flags — these are KNOWN BAD actors, score harshly
   if (goplus.available) {
-    if (goplus.honeypot_related) { score += 40; criticalFlags.push('HONEYPOT_CREATOR'); }
+    if (goplus.honeypot_related) { score += 70; criticalFlags.push('HONEYPOT_CREATOR'); }
     if (goplus.malicious_contracts_created > 0) {
-      score += Math.min(40, goplus.malicious_contracts_created * 10);
+      score += Math.min(60, goplus.malicious_contracts_created * 20);
       criticalFlags.push(`MALICIOUS_CONTRACTS_${goplus.malicious_contracts_created}`);
     }
-    if (goplus.phishing_activities) { score += 30; criticalFlags.push('PHISHING'); }
-    if (goplus.stealing_attack) { score += 30; criticalFlags.push('STEALING_ATTACK'); }
-    if (goplus.money_laundering) { score += 25; criticalFlags.push('MONEY_LAUNDERING'); }
-    if (goplus.sanctioned) { score += 50; criticalFlags.push('SANCTIONED'); }
-    if (goplus.mixer_usage) { score += 15; warningFlags.push('MIXER_USAGE'); }
-    if (goplus.darkweb) { score += 20; criticalFlags.push('DARKWEB'); }
-    if (goplus.cybercrime) { score += 25; criticalFlags.push('CYBERCRIME'); }
-    if (goplus.fake_kyc) { score += 15; warningFlags.push('FAKE_KYC'); }
+    if (goplus.phishing_activities) { score += 60; criticalFlags.push('PHISHING'); }
+    if (goplus.stealing_attack) { score += 60; criticalFlags.push('STEALING_ATTACK'); }
+    if (goplus.money_laundering) { score += 50; criticalFlags.push('MONEY_LAUNDERING'); }
+    if (goplus.sanctioned) { score += 80; criticalFlags.push('SANCTIONED'); }
+    if (goplus.mixer_usage) { score += 25; warningFlags.push('MIXER_USAGE'); }
+    if (goplus.darkweb) { score += 50; criticalFlags.push('DARKWEB'); }
+    if (goplus.cybercrime) { score += 50; criticalFlags.push('CYBERCRIME'); }
+    if (goplus.fake_kyc) { score += 20; warningFlags.push('FAKE_KYC'); }
+  }
+
+  // Any critical flag = minimum 80 score. You don't get to be "SUSPICIOUS" as a honeypot creator.
+  if (criticalFlags.length >= 2) {
+    score = Math.max(score, 95);
+  } else if (criticalFlags.length === 1) {
+    score = Math.max(score, 80);
   }
 
   // Profile flags
@@ -216,9 +223,9 @@ function computeDeployerRisk(
     else if (profile.velocity24h > 2) { score += 10; warningFlags.push('MODERATE_VELOCITY'); }
   }
 
-  // Positive signals
-  if (profile.available && profile.walletAgeDays > 365 && goplus.available && criticalFlags.length === 0) {
-    score = Math.max(0, score - 10); // bonus for established, clean deployer
+  // Positive signals — only if truly clean
+  if (profile.available && profile.walletAgeDays > 365 && goplus.available && criticalFlags.length === 0 && warningFlags.length === 0) {
+    score = Math.max(0, score - 10);
   }
 
   return { score: Math.min(100, Math.max(0, score)), criticalFlags, warningFlags };

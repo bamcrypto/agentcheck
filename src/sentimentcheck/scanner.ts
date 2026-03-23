@@ -168,6 +168,12 @@ function computeSentiment(
   const redFlags: string[] = [];
   const positiveSignals: string[] = [];
 
+  // If CoinGecko has no data at all for this token, that IS a red flag
+  if (!cg.available) {
+    score -= 15;
+    redFlags.push('no_coingecko_listing');
+  }
+
   // Crowd sentiment (CoinGecko votes)
   if (cg.sentiment_votes_up_pct > 70) { score += 10; positiveSignals.push('strong_crowd_bullish'); }
   else if (cg.sentiment_votes_up_pct < 30) { score -= 10; redFlags.push('crowd_bearish'); }
@@ -198,9 +204,18 @@ function computeSentiment(
 
   // Social links (DexScreener)
   if (dex.available && !dex.hasLinks) {
-    score -= 8; redFlags.push('no_social_links_on_dexscreener');
-  } else if (dex.available && dex.linkCount >= 3) {
+    score -= 10; redFlags.push('no_social_links_on_dexscreener');
+  } else if (!dex.available) {
+    score -= 5; redFlags.push('no_dexscreener_profile');
+  } else if (dex.linkCount >= 3) {
     score += 3; positiveSignals.push('multiple_social_links');
+  }
+
+  // Total absence of community = strong bearish signal
+  const hasAnyCommunity = cg.reddit_subscribers > 0 || cg.telegram_users > 0 ||
+    cg.community_score > 0 || (dex.available && dex.hasLinks);
+  if (!hasAnyCommunity) {
+    score -= 10; redFlags.push('zero_community_presence');
   }
 
   // Market context (Fear & Greed)
@@ -260,7 +275,7 @@ export async function scanSentiment(
   if (fg.available) sourcesAvailable.push('fear_greed');
   else sourcesFailed.push('fear_greed');
 
-  // If no CoinGecko data, we can still provide basic results
+  // If no CoinGecko data, defaults should lean BEARISH (absence of data IS a signal)
   const defaultCG = {
     available: false,
     community_score: 0, developer_score: 0, public_interest_score: 0,
@@ -286,7 +301,10 @@ export async function scanSentiment(
   // Verdict
   let verdict: string;
   if (!cg?.available && !dex.available) {
-    verdict = `No social data available for this token. This could indicate a very new or obscure project — proceed with caution.`;
+    verdict = `⚠️ No social data available for this token. Zero community presence detected — this is a significant red flag for any token claiming to be legitimate.`;
+    if (level === 'NEUTRAL') level = 'BEARISH'; // no data = bearish, not neutral
+  } else if (redFlags.length >= 3) {
+    verdict = `⛔ Multiple red flags detected: ${redFlags.join(', ')}. Extremely low social legitimacy.`;
   } else {
     const parts: string[] = [`Sentiment: ${level} (${score}/100). Momentum: ${momentum}.`];
     if (positiveSignals.length > 0) parts.push(`Positive: ${positiveSignals.slice(0, 3).join(', ')}.`);

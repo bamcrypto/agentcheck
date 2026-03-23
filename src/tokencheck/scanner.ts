@@ -61,6 +61,11 @@ export interface ScanResult {
   // Technical analysis (technical/full only)
   technical?: TAResult;
 
+  // Top-level danger signals — agents should check these FIRST
+  is_dangerous: boolean;
+  red_flag_count: number;
+  red_flags: string[];
+
   // Summary verdict
   verdict: string;
 }
@@ -163,6 +168,22 @@ export async function scanToken(
   // Step 4: Build result
   const scanTimeMs = Date.now() - startTime;
 
+  // Collect ALL red flags from all dimensions into one top-level list
+  const allRedFlags = [
+    ...risk.critical_flags,
+    ...Object.values(risk.dimensions)
+      .flatMap(d => d.details)
+      .filter(d =>
+        d.includes('honeypot') || d.includes('fake_token') || d.includes('not_open_source') ||
+        d.includes('extremely_low') || d.includes('very_few_holders') || d.includes('single_holder') ||
+        d.includes('serial_deployer') || d.includes('new_deployer') || d.includes('dead_volume') ||
+        d.includes('severe_crash') || d.includes('heavy_selling') || d.includes('suspicious_volume') ||
+        d.includes('self_destruct') || d.includes('owner_can_change') || d.includes('can_reclaim') ||
+        d.includes('slippage_modifiable') || d.includes('cannot_sell_all'),
+      ),
+  ];
+  const uniqueRedFlags = [...new Set(allRedFlags)];
+
   const result: ScanResult = {
     token_address: address,
     chain,
@@ -171,6 +192,9 @@ export async function scanToken(
     scan_time_ms: scanTimeMs,
     sources_available: sourcesAvailable,
     sources_failed: sourcesFailed,
+    is_dangerous: risk.critical_flags.length > 0 || risk.overall >= 75,
+    red_flag_count: uniqueRedFlags.length,
+    red_flags: uniqueRedFlags,
     risk,
     verdict: generateVerdict(risk, dex, goplus, address),
   };
@@ -284,6 +308,9 @@ function makeErrorResult(
     scan_time_ms: Date.now() - startTime,
     sources_available: [],
     sources_failed: ['all'],
+    is_dangerous: true,
+    red_flag_count: 1,
+    red_flags: ['RESOLUTION_FAILED'],
     risk: {
       overall: -1,
       level: 'AVOID',
