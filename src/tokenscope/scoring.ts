@@ -250,6 +250,7 @@ export function computeOverallRisk(
   if (dex.total_liquidity_usd < 500 && dex.available) criticalFlags.push('NO_LIQUIDITY');
 
   if (criticalFlags.length > 0) {
+    level = 'AVOID';
     recommendation = `CRITICAL: ${criticalFlags.join(', ')} detected. Do not interact.`;
   }
 
