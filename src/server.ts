@@ -17,6 +17,47 @@ import { createLogger } from './utils/logger.js';
 
 const log = createLogger('server');
 
+// ─── Job Queue (concurrent request handling) ─────────────────────────
+
+class JobQueue {
+  private queue: Array<{ job: AcpJob; memo?: AcpMemo }> = [];
+  private processing = 0;
+  private readonly maxConcurrent: number;
+
+  constructor(maxConcurrent = 5) {
+    this.maxConcurrent = maxConcurrent;
+  }
+
+  enqueue(job: AcpJob, memo?: AcpMemo): void {
+    this.queue.push({ job, memo });
+    log.info(`Job #${job.id} queued (queue: ${this.queue.length}, active: ${this.processing})`);
+    this.processNext();
+  }
+
+  private async processNext(): Promise<void> {
+    if (this.processing >= this.maxConcurrent || this.queue.length === 0) return;
+
+    const item = this.queue.shift();
+    if (!item) return;
+
+    this.processing++;
+    try {
+      await handleJob(item.job, item.memo);
+    } catch (e) {
+      log.error(`Queue error on job #${item.job.id}:`, e);
+    } finally {
+      this.processing--;
+      this.processNext();
+    }
+  }
+
+  get stats() {
+    return { queued: this.queue.length, active: this.processing };
+  }
+}
+
+const jobQueue = new JobQueue(5);
+
 // ─── Config (from environment) ───────────────────────────────────────
 
 const PRIVATE_KEY = process.env.ACP_PRIVATE_KEY;
@@ -45,6 +86,42 @@ async function handleJob(job: AcpJob, memoToSign?: AcpMemo): Promise<void> {
       memoToSign?.nextPhase === AcpJobPhases.NEGOTIATION
     ) {
       log.info(`New job request #${jobId} "${job.name}" from ${job.clientAddress}`);
+
+      // Validate the request — reject incomplete or inappropriate jobs
+      const reqJobName = job.name ?? '';
+      const validJobNames = ['check_agent', 'find_agent'];
+      const reqBody = typeof job.requirement === 'string'
+        ? (() => { try { return JSON.parse(job.requirement as string); } catch { return { text: job.requirement }; } })()
+        : job.requirement ?? {};
+
+      if (!validJobNames.includes(reqJobName) && !reqBody.agent && !reqBody.task && !reqBody.text) {
+        log.info(`Rejecting job #${jobId}: unrecognized job "${reqJobName}" with no valid parameters`);
+        await job.reject(
+          'AgentCheck only supports "check_agent" and "find_agent" jobs. ' +
+          'For check_agent, provide {"agent": "<name or id>"}. ' +
+          'For find_agent, provide {"task": "<description>"}.',
+        );
+        return;
+      }
+
+      // For check_agent: require an agent name or ID
+      if (reqJobName === 'check_agent' && !reqBody.agent && !reqBody.text) {
+        log.info(`Rejecting job #${jobId}: check_agent missing "agent" parameter`);
+        await job.reject(
+          'Missing required parameter "agent". Provide the agent name or ID to check, e.g. {"agent": "Luna"}.',
+        );
+        return;
+      }
+
+      // For find_agent: require a task description
+      if (reqJobName === 'find_agent' && !reqBody.task && !reqBody.text) {
+        log.info(`Rejecting job #${jobId}: find_agent missing "task" parameter`);
+        await job.reject(
+          'Missing required parameter "task". Describe what you need, e.g. {"task": "swap tokens"}.',
+        );
+        return;
+      }
+
       await job.accept('AgentCheck will process your request.');
       await job.createRequirement(`Job #${jobId} accepted. Please confirm payment to proceed.`);
       log.info(`Job #${jobId} accepted`);
@@ -136,7 +213,7 @@ async function main(): Promise<void> {
   log.info('Initializing ACP client...');
   const acpClient = new AcpClient({
     acpContractClient: contractClient,
-    onNewTask: handleJob,
+    onNewTask: (job: AcpJob, memo?: AcpMemo) => jobQueue.enqueue(job, memo),
     ...(CUSTOM_RPC ? { customRpcUrl: CUSTOM_RPC } : {}),
   });
 
@@ -160,7 +237,7 @@ async function main(): Promise<void> {
       if (jobsToProcess.length > 0) {
         log.info(`Found ${jobsToProcess.length} pending jobs via polling`);
         for (const job of jobsToProcess) {
-          await handleJob(job);
+          jobQueue.enqueue(job);
         }
       }
     } catch (e) {
