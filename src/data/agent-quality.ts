@@ -582,12 +582,20 @@ function extractKeywords(description: string): string[] {
     'agent', 'agents', 'service', 'services', 'use', 'using',
   ]);
 
-  return description
+  const words = description
     .toLowerCase()
     .replace(/[^a-z0-9\s_]/g, ' ')
     .split(/\s+/)
-    .filter((w) => w.length > 2 && !stopWords.has(w))
-    .slice(0, 8);
+    .filter((w) => w.length > 2 && !stopWords.has(w));
+
+  // Basic stemming: remove common suffixes so "swapping" matches "swap"
+  const stemmed = words.map((w) =>
+    w.replace(/(ing|tion|ment|ness|able|ible|ful|less|ous|ive|ed|er|est|ly|s)$/, ''),
+  ).filter((w) => w.length > 2);
+
+  // Return both original and stemmed, deduplicated
+  const all = [...new Set([...words, ...stemmed])];
+  return all.slice(0, 12);
 }
 
 function generateCheckSummary(
