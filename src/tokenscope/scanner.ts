@@ -39,6 +39,7 @@ export interface ScanResult {
     pair_count: number;
     total_liquidity_usd: number;
     buy_sell_ratio: number;
+    fdv: number;
   };
 
   // Contract details (standard+)
@@ -53,6 +54,7 @@ export interface ScanResult {
     deployer_address: string;
     deployer_contract_count: number;
     deployer_age_days: number;
+    slippage_modifiable: boolean;
     flags: string[];
   };
 
@@ -190,6 +192,7 @@ export async function scanToken(
       pair_count: dex.pair_count,
       total_liquidity_usd: dex.total_liquidity_usd,
       buy_sell_ratio: dex.buy_sell_ratio,
+      fdv: cgToken?.market_cap || dex.market_cap || virtualsData?.market_cap || 0,
     };
   }
 
@@ -203,6 +206,7 @@ export async function scanToken(
       is_proxy: goplus.is_proxy,
       buy_tax: goplus.buy_tax,
       sell_tax: goplus.sell_tax,
+      slippage_modifiable: goplus.slippage_modifiable,
       deployer_address: basescan.deployer_address || goplus.creator_address,
       deployer_contract_count: basescan.deployer_contract_count,
       deployer_age_days: basescan.deployer_age_days,

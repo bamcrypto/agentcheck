@@ -8,6 +8,7 @@ export interface TAResult {
   data_points: number;
   rsi_14: number;
   rsi_signal: 'oversold' | 'neutral' | 'overbought';
+  stoch_rsi: { k: number; d: number; signal: 'oversold' | 'neutral' | 'overbought' };
   macd: { macd: number; signal: number; histogram: number; trend: 'bullish' | 'bearish' | 'neutral' };
   bollinger: { upper: number; middle: number; lower: number; position: 'above' | 'within' | 'below' };
   sma_20: number;
@@ -27,6 +28,7 @@ const EMPTY_RESULT: TAResult = {
   data_points: 0,
   rsi_14: 50,
   rsi_signal: 'neutral',
+  stoch_rsi: { k: 50, d: 50, signal: 'neutral' },
   macd: { macd: 0, signal: 0, histogram: 0, trend: 'neutral' },
   bollinger: { upper: 0, middle: 0, lower: 0, position: 'within' },
   sma_20: 0,
@@ -56,6 +58,11 @@ export function computeTA(prices: [number, number][]): TAResult {
   const rsi = computeRSI(closes, 14);
   const rsiSignal: TAResult['rsi_signal'] =
     rsi < 30 ? 'oversold' : rsi > 70 ? 'overbought' : 'neutral';
+
+  // Stochastic RSI (14-period RSI, 14-period stochastic, 3-period smooth)
+  const stochRsi = computeStochRSI(closes, 14, 14, 3);
+  const stochRsiSignal: TAResult['stoch_rsi']['signal'] =
+    stochRsi.k < 20 ? 'oversold' : stochRsi.k > 80 ? 'overbought' : 'neutral';
 
   // MACD (12, 26, 9)
   const ema12 = computeEMA(closes, 12);
@@ -121,6 +128,11 @@ export function computeTA(prices: [number, number][]): TAResult {
     data_points: prices.length,
     rsi_14: round(rsi),
     rsi_signal: rsiSignal,
+    stoch_rsi: {
+      k: round(stochRsi.k),
+      d: round(stochRsi.d),
+      signal: stochRsiSignal,
+    },
     macd: {
       macd: round(macdLine),
       signal: round(signalLine),
@@ -146,6 +158,42 @@ export function computeTA(prices: [number, number][]): TAResult {
 }
 
 // ─── Math helpers ────────────────────────────────────────────────────
+
+function computeStochRSI(
+  closes: number[],
+  rsiPeriod: number,
+  stochPeriod: number,
+  smoothK: number,
+): { k: number; d: number } {
+  if (closes.length < rsiPeriod + stochPeriod + smoothK) return { k: 50, d: 50 };
+
+  // Compute RSI values for last stochPeriod + smoothK periods
+  const rsiValues: number[] = [];
+  for (let i = closes.length - stochPeriod - smoothK; i < closes.length; i++) {
+    const slice = closes.slice(0, i + 1);
+    rsiValues.push(computeRSI(slice, rsiPeriod));
+  }
+
+  // Stochastic of RSI: (current RSI - lowest RSI) / (highest RSI - lowest RSI)
+  const stochValues: number[] = [];
+  for (let i = stochPeriod; i <= rsiValues.length; i++) {
+    const window = rsiValues.slice(i - stochPeriod, i);
+    const min = Math.min(...window);
+    const max = Math.max(...window);
+    const range = max - min;
+    stochValues.push(range > 0 ? ((window[window.length - 1] - min) / range) * 100 : 50);
+  }
+
+  // %K = SMA of raw stochastic (smoothK period)
+  const k = stochValues.length >= smoothK
+    ? stochValues.slice(-smoothK).reduce((s, v) => s + v, 0) / smoothK
+    : stochValues[stochValues.length - 1] ?? 50;
+
+  // %D = SMA of %K (3-period) — use same as K for now since we have limited values
+  const d = k; // simplified; full impl would track K history
+
+  return { k, d };
+}
 
 function computeRSI(closes: number[], period: number): number {
   if (closes.length < period + 1) return 50;

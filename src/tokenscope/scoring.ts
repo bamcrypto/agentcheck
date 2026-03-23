@@ -43,6 +43,7 @@ export function scoreContractSecurity(goplus: GoPlusResult): { score: number; de
   if (goplus.can_pause_trading) { score += 10; details.push('can_pause_trading'); }
   if (goplus.has_blacklist) { score += 8; details.push('has_blacklist'); }
   if (goplus.external_calls) { score += 8; details.push('external_calls'); }
+  if (goplus.slippage_modifiable) { score += 12; details.push('slippage_modifiable'); }
 
   // Tax analysis
   if (goplus.buy_tax > 10) { score += 20; details.push(`high_buy_tax_${goplus.buy_tax.toFixed(1)}%`); }

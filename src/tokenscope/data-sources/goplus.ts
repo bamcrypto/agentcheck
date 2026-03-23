@@ -24,6 +24,7 @@ export interface GoPlusResult {
   can_take_back_ownership: boolean;
   external_calls: boolean;
   is_anti_whale: boolean;
+  slippage_modifiable: boolean;
   buy_tax: number;
   sell_tax: number;
   holder_count: number;
@@ -52,6 +53,7 @@ const EMPTY_RESULT: GoPlusResult = {
   can_take_back_ownership: false,
   external_calls: false,
   is_anti_whale: false,
+  slippage_modifiable: false,
   buy_tax: 0,
   sell_tax: 0,
   holder_count: 0,
@@ -110,6 +112,7 @@ export async function checkTokenSecurity(
     if (toBool(data.hidden_owner)) flags.push('hidden_owner');
     if (toBool(data.external_call)) flags.push('external_calls');
     if (toBool(data.cannot_sell_all)) flags.push('cannot_sell_all');
+    if (toBool(data.slippage_modifiable)) flags.push('slippage_modifiable');
     if (!toBool(data.is_open_source)) flags.push('not_open_source');
     if (toBool(data.is_airdrop_scam)) flags.push('airdrop_scam');
     if (toBool(data.is_true_token) === false) flags.push('fake_token');
@@ -148,6 +151,7 @@ export async function checkTokenSecurity(
       can_take_back_ownership: toBool(data.can_take_back_ownership),
       external_calls: toBool(data.external_call),
       is_anti_whale: toBool(data.is_anti_whale),
+      slippage_modifiable: toBool(data.slippage_modifiable),
       buy_tax: buyTax,
       sell_tax: sellTax,
       holder_count: toNumber(data.holder_count),
