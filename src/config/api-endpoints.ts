@@ -68,7 +68,7 @@ export const DUNE_API = {
   },
 } as const;
 
-// ─── TokenScope Data Sources ────────────────────────────────────────
+// ─── TokenCheck Data Sources ────────────────────────────────────────
 
 // GoPlus Security API (free, no auth required)
 export const GOPLUS_API = {

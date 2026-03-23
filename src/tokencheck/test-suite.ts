@@ -1,5 +1,5 @@
 /**
- * TokenScope Comprehensive Test Suite
+ * TokenCheck Comprehensive Test Suite
  * Tests against real tokens on Base to validate scoring accuracy.
  */
 
@@ -383,7 +383,7 @@ async function testTA(): Promise<{ passed: number; failed: number; results: stri
 
 async function runAllTests(): Promise<void> {
   console.log('╔══════════════════════════════════════════════════════════════╗');
-  console.log('║           TokenScope Comprehensive Test Suite               ║');
+  console.log('║           TokenCheck Comprehensive Test Suite               ║');
   console.log('╚══════════════════════════════════════════════════════════════╝\n');
 
   let totalPassed = 0;

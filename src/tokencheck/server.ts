@@ -8,7 +8,7 @@ const { AcpContractClientV2, baseAcpConfigV2, AcpJobPhases } = AcpModule;
 import { scanToken, type ScanDepth } from './scanner.js';
 import { createLogger } from '../utils/logger.js';
 
-const log = createLogger('tokenscope-server');
+const log = createLogger('tokencheck-server');
 
 // ─── Config ─────────────────────────────────────────────────────────
 
@@ -46,11 +46,11 @@ async function handleJob(job: any, memoToSign?: any): Promise<void> {
       const jobName = job.name ?? '';
       if (!JOB_DEPTH_MAP[jobName]) {
         log.info(`Rejecting job #${jobId}: unsupported offering "${jobName}"`);
-        await job.reject(`TokenScope does not support "${jobName}". Available: quick_scan, token_analysis, technical_analysis, full_report.`);
+        await job.reject(`TokenCheck does not support "${jobName}". Available: quick_scan, token_analysis, technical_analysis, full_report.`);
         return;
       }
 
-      await job.accept('TokenScope will analyze your token.');
+      await job.accept('TokenCheck will analyze your token.');
       await job.createRequirement(`Job #${jobId} accepted. Please confirm payment to proceed.`);
       log.info(`Job #${jobId} accepted`);
       return;
@@ -105,7 +105,7 @@ async function handleJob(job: any, memoToSign?: any): Promise<void> {
 // ─── Main ───────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-  log.info('Starting TokenScope...');
+  log.info('Starting TokenCheck...');
 
   log.info('Building ACP contract client...');
   const contractClient = await AcpContractClientV2.build(
@@ -122,7 +122,7 @@ async function main(): Promise<void> {
   });
   await acpClient.init();
 
-  log.info('TokenScope is live and listening for jobs!');
+  log.info('TokenCheck is live and listening for jobs!');
   log.info(`Wallet: ${AGENT_WALLET}`);
   log.info('Offerings: quick_scan ($0.05), token_analysis ($0.15), technical_analysis ($0.50), full_report ($0.75)');
 

@@ -1,5 +1,5 @@
 /**
- * ACP Offering definitions for TokenScope agent.
+ * ACP Offering definitions for TokenCheck agent.
  * Descriptions optimized for Butler keyword discovery.
  */
 

@@ -1,16 +1,16 @@
 import { scanToken, type ScanDepth } from './scanner.js';
 import { createLogger } from '../utils/logger.js';
 
-const log = createLogger('tokenscope');
+const log = createLogger('tokencheck');
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    console.log('TokenScope — Token Intelligence for ACP');
+    console.log('TokenCheck — Token Intelligence for ACP');
     console.log('');
     console.log('Usage:');
-    console.log('  npx tsx src/tokenscope/cli.ts <address|symbol> [depth] [chain]');
+    console.log('  npx tsx src/tokencheck/cli.ts <address|symbol> [depth] [chain]');
     console.log('');
     console.log('Depth levels:');
     console.log('  quick      — Safety check only (GoPlus + DexScreener)');
@@ -19,9 +19,9 @@ async function main(): Promise<void> {
     console.log('  full       — Everything combined');
     console.log('');
     console.log('Examples:');
-    console.log('  npx tsx src/tokenscope/cli.ts 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913');
-    console.log('  npx tsx src/tokenscope/cli.ts VIRTUAL full');
-    console.log('  npx tsx src/tokenscope/cli.ts 0x... quick base');
+    console.log('  npx tsx src/tokencheck/cli.ts 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913');
+    console.log('  npx tsx src/tokencheck/cli.ts VIRTUAL full');
+    console.log('  npx tsx src/tokencheck/cli.ts 0x... quick base');
     return;
   }
 
