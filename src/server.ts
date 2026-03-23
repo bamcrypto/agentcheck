@@ -5,13 +5,13 @@
  * with quality intelligence data.
  */
 import 'dotenv/config';
-import AcpClient, {
-  AcpContractClientV2,
-  baseAcpConfigV2,
-  AcpJob,
-  AcpMemo,
-  AcpJobPhases,
-} from '@virtuals-protocol/acp-node';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const AcpModule = require('@virtuals-protocol/acp-node');
+const AcpClient = AcpModule.default ?? AcpModule.AcpClient ?? AcpModule;
+const { AcpContractClientV2, baseAcpConfigV2, AcpJobPhases } = AcpModule;
+type AcpJob = any;
+type AcpMemo = any;
 import { resolveAgent, findCompetingAgents, formatCheckAgent, formatFindAgent } from './data/agent-quality.js';
 import { createLogger } from './utils/logger.js';
 
