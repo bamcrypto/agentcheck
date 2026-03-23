@@ -2,6 +2,7 @@ import { checkTokenSecurity } from './data-sources/goplus.js';
 import { getTokenData } from './data-sources/dexscreener.js';
 import { getContractInfo } from './data-sources/basescan.js';
 import { getTokenInfo, getPriceHistory, resolveTokenAddress } from './data-sources/coingecko.js';
+import { getVirtualsTokenData } from './data-sources/virtuals-api.js';
 import { computeOverallRisk, type RiskScore } from './scoring.js';
 import { computeTA, type TAResult } from './technical-analysis.js';
 import { createLogger } from '../utils/logger.js';
@@ -134,13 +135,25 @@ export async function scanToken(
   }
 
   const goplus = data.goplus as Awaited<ReturnType<typeof checkTokenSecurity>>;
-  const dex = data.dexscreener as Awaited<ReturnType<typeof getTokenData>>;
+  let dex = data.dexscreener as Awaited<ReturnType<typeof getTokenData>>;
   const basescan = (data.basescan as Awaited<ReturnType<typeof getContractInfo>>) ?? {
     available: false, is_verified: false, contract_name: '', compiler_version: '',
     deployer_address: '', deploy_tx_hash: '', deployer_contract_count: 0, deployer_age_days: 0, flags: [],
   };
   const cgToken = data.coingecko as Awaited<ReturnType<typeof getTokenInfo>> | undefined;
   const priceHistory = data.priceHistory as Awaited<ReturnType<typeof getPriceHistory>> | undefined;
+
+  // Fallback: If DexScreener has no data, try Virtuals API (for bonding curve tokens)
+  let virtualsData: Awaited<ReturnType<typeof getVirtualsTokenData>> | null = null;
+  if (!dex.available || dex.pair_count === 0) {
+    try {
+      virtualsData = await getVirtualsTokenData(address);
+      if (virtualsData.available) {
+        sourcesAvailable.push('virtuals');
+        log.info(`DexScreener empty, got data from Virtuals API for ${address}`);
+      }
+    } catch { /* non-critical */ }
+  }
 
   // Step 3: Compute risk score
   const risk = computeOverallRisk(goplus, dex, basescan);
@@ -163,11 +176,11 @@ export async function scanToken(
   // Token info (standard+)
   if (depth !== 'quick') {
     result.token = {
-      name: cgToken?.name ?? dex.pairs?.[0]?.base_token ?? '',
-      symbol: cgToken?.symbol ?? dex.pairs?.[0]?.base_token ?? '',
-      price_usd: dex.price_usd || cgToken?.price_usd || 0,
-      market_cap: dex.market_cap || cgToken?.market_cap || 0,
-      volume_24h: dex.total_volume_24h || cgToken?.total_volume_24h || 0,
+      name: cgToken?.name || virtualsData?.name || dex.pairs?.[0]?.base_token || '',
+      symbol: cgToken?.symbol || virtualsData?.symbol || dex.pairs?.[0]?.base_token || '',
+      price_usd: dex.price_usd || cgToken?.price_usd || virtualsData?.price_usd || 0,
+      market_cap: dex.market_cap || cgToken?.market_cap || virtualsData?.market_cap || 0,
+      volume_24h: dex.total_volume_24h || cgToken?.total_volume_24h || virtualsData?.volume_24h || 0,
       price_change_5m: dex.price_change_5m,
       price_change_1h: dex.price_change_1h,
       price_change_6h: dex.price_change_6h,
