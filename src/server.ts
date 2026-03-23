@@ -1,9 +1,10 @@
 /**
- * AgentOptimizer — ACP Job Listener Server
+ * AgentCheck — ACP Job Listener Server
  *
  * Listens for incoming ACP jobs (check_agent, find_agent) and responds
  * with quality intelligence data.
  */
+import 'dotenv/config';
 import AcpClient, {
   AcpContractClientV2,
   baseAcpConfigV2,
