@@ -67,3 +67,38 @@ export const DUNE_API = {
     jobHistory: '', // query ID for job history
   },
 } as const;
+
+// ─── TokenScope Data Sources ────────────────────────────────────────
+
+// GoPlus Security API (free, no auth required)
+export const GOPLUS_API = {
+  baseUrl: 'https://api.gopluslabs.io/api/v1',
+  chainIds: {
+    base: '8453',
+    ethereum: '1',
+    bsc: '56',
+    arbitrum: '42161',
+    polygon: '137',
+  },
+} as const;
+
+// DexScreener API (free, no auth required)
+export const DEXSCREENER_API = {
+  baseUrl: 'https://api.dexscreener.com',
+} as const;
+
+// Basescan API (free tier, requires API key)
+export const BASESCAN_API = {
+  baseUrl: 'https://api.basescan.org/api',
+  apiKey: process.env.BASESCAN_API_KEY || '',
+} as const;
+
+// Base RPC (free public endpoint)
+export const BASE_RPC = {
+  url: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
+} as const;
+
+// Fear & Greed Index (free, no auth)
+export const FEAR_GREED_API = {
+  url: 'https://api.alternative.me/fng/',
+} as const;

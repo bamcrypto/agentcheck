@@ -6,6 +6,8 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "tsx src/server.ts",
+    "start:tokenscope": "tsx src/tokenscope/server.ts",
+    "scan": "tsx src/tokenscope/cli.ts",
     "check": "tsx src/index.ts check",
     "find": "tsx src/index.ts find",
     "offerings": "tsx src/index.ts offerings",
