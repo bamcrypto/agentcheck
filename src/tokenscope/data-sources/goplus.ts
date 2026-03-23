@@ -4,6 +4,10 @@ import { createLogger } from '../../utils/logger.js';
 
 const log = createLogger('goplus');
 
+// Simple in-memory cache for GoPlus results (10 min TTL)
+const goplusCache = new Map<string, { result: GoPlusResult; expiry: number }>();
+const CACHE_TTL = 10 * 60 * 1000;
+
 export interface GoPlusResult {
   available: boolean;
   is_honeypot: boolean;
@@ -77,6 +81,10 @@ export async function checkTokenSecurity(
   address: string,
   chain: string = 'base',
 ): Promise<GoPlusResult> {
+  const cacheKey = `${chain}:${address.toLowerCase()}`;
+  const cached = goplusCache.get(cacheKey);
+  if (cached && cached.expiry > Date.now()) return cached.result;
+
   const chainId = GOPLUS_API.chainIds[chain as keyof typeof GOPLUS_API.chainIds] ?? '8453';
   const url = `${GOPLUS_API.baseUrl}/token_security/${chainId}`;
 
@@ -124,7 +132,7 @@ export async function checkTokenSecurity(
       is_locked: toBool(h.is_locked),
     }));
 
-    return {
+    const result: GoPlusResult = {
       available: true,
       is_honeypot: toBool(data.is_honeypot),
       is_open_source: toBool(data.is_open_source),
@@ -151,6 +159,9 @@ export async function checkTokenSecurity(
       creator_address: (data.creator_address as string) ?? '',
       flags,
     };
+
+    goplusCache.set(cacheKey, { result, expiry: Date.now() + CACHE_TTL });
+    return result;
   } catch (e: unknown) {
     log.error(`GoPlus API error for ${address}:`, e);
     return { ...EMPTY_RESULT, available: false };

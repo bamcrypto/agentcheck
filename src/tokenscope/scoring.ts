@@ -21,7 +21,7 @@ export interface RiskScore {
  * Weight: 40%
  */
 export function scoreContractSecurity(goplus: GoPlusResult): { score: number; details: string[] } {
-  if (!goplus.available) return { score: 50, details: ['contract_data_unavailable'] };
+  if (!goplus.available) return { score: 30, details: ['contract_data_unavailable'] };
 
   let score = 0;
   const details: string[] = [];
@@ -64,7 +64,7 @@ export function scoreContractSecurity(goplus: GoPlusResult): { score: number; de
  * Weight: 20%
  */
 export function scoreLiquidity(dex: DexScreenerResult): { score: number; details: string[] } {
-  if (!dex.available) return { score: 50, details: ['liquidity_data_unavailable'] };
+  if (!dex.available) return { score: 30, details: ['liquidity_data_unavailable'] };
 
   let score = 0;
   const details: string[] = [];
@@ -101,7 +101,7 @@ export function scoreLiquidity(dex: DexScreenerResult): { score: number; details
  */
 export function scoreHolderConcentration(goplus: GoPlusResult): { score: number; details: string[] } {
   if (!goplus.available || goplus.top_holders.length === 0) {
-    return { score: 50, details: ['holder_data_unavailable'] };
+    return { score: 30, details: ['holder_data_unavailable'] };
   }
 
   let score = 0;
@@ -143,7 +143,7 @@ export function scoreHolderConcentration(goplus: GoPlusResult): { score: number;
  * Weight: 15%
  */
 export function scoreDeployerReputation(basescan: BasescanResult): { score: number; details: string[] } {
-  if (!basescan.available) return { score: 50, details: ['deployer_data_unavailable'] };
+  if (!basescan.available) return { score: 30, details: ['deployer_data_unavailable'] };
 
   let score = 0;
   const details: string[] = [];
@@ -173,7 +173,7 @@ export function scoreDeployerReputation(basescan: BasescanResult): { score: numb
  * Weight: 10%
  */
 export function scoreMarketSignals(dex: DexScreenerResult): { score: number; details: string[] } {
-  if (!dex.available) return { score: 50, details: ['market_data_unavailable'] };
+  if (!dex.available) return { score: 30, details: ['market_data_unavailable'] };
 
   let score = 0;
   const details: string[] = [];

@@ -4,6 +4,18 @@ import { createLogger } from '../../utils/logger.js';
 
 const log = createLogger('coingecko');
 
+// Rate limiting: CoinGecko free tier allows ~10-30 calls/min
+let lastCoinGeckoCall = 0;
+const MIN_INTERVAL_MS = 2000; // 2 seconds between calls
+
+async function rateLimitedGet(url: string, params?: Record<string, unknown>, timeout = 8000) {
+  const now = Date.now();
+  const wait = Math.max(0, MIN_INTERVAL_MS - (now - lastCoinGeckoCall));
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  lastCoinGeckoCall = Date.now();
+  return axios.get(url, { params, timeout });
+}
+
 export interface CoinGeckoTokenResult {
   available: boolean;
   name: string;
@@ -60,7 +72,7 @@ export async function getTokenInfo(
   const url = `${COINGECKO_API.baseUrl}/coins/${platform}/contract/${address.toLowerCase()}`;
 
   try {
-    const resp = await axios.get(url, { timeout: 8000 });
+    const resp = await rateLimitedGet(url);
     const d = resp.data;
     if (!d) return { ...EMPTY_TOKEN, available: false };
 
@@ -104,10 +116,7 @@ export async function getPriceHistory(
   const url = `${COINGECKO_API.baseUrl}/coins/${platform}/contract/${address.toLowerCase()}/market_chart`;
 
   try {
-    const resp = await axios.get(url, {
-      params: { vs_currency: 'usd', days },
-      timeout: 10000,
-    });
+    const resp = await rateLimitedGet(url, { vs_currency: 'usd', days }, 10000);
 
     const prices = resp.data?.prices;
     if (!Array.isArray(prices) || prices.length === 0) {
@@ -153,10 +162,7 @@ export async function resolveTokenAddress(
 
   // Try CoinGecko search
   try {
-    const resp = await axios.get(`${COINGECKO_API.baseUrl}/search`, {
-      params: { query: normalized },
-      timeout: 5000,
-    });
+    const resp = await rateLimitedGet(`${COINGECKO_API.baseUrl}/search`, { query: normalized }, 5000);
 
     const coins = resp.data?.coins ?? [];
     for (const coin of coins.slice(0, 10)) {
