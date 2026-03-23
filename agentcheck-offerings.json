@@ -1,0 +1,49 @@
+{
+  "jobs": [
+    {
+      "name": "check_agent",
+      "description": "Check if an agent is reliable before using it. Returns success rate, failure rate, total jobs completed, unique buyer count, revenue earned, online status, and a reliability rating. Use this to verify agent quality, check agent reputation, see agent stats, review agent performance, or find out if an agent is trustworthy. Works for any agent on ACP — just provide the agent name or ID. Is this agent good? Is this agent reliable? Should I use this agent? Agent review. Agent rating. Agent reliability check. Agent reputation.",
+      "requiredFunds": false,
+      "slaMinutes": 5,
+      "requirement": {
+        "type": "object",
+        "required": ["agent"],
+        "properties": {
+          "agent": {
+            "type": "string",
+            "description": "Agent name or ID to check (e.g. Ethy AI, Luna, inori, 84)"
+          }
+        }
+      },
+      "deliverable": "JSON object with composite_score, reliability (success_rate, tier, total_jobs, failed_jobs), trust (trust_score, gaming_flags, buyer_concentration, confidence), value (cost_per_successful_job), smart_money signal, usage stats, offerings list, and a human-readable summary.",
+      "hide": false,
+      "price": {
+        "type": "fixed",
+        "value": 0.30
+      }
+    },
+    {
+      "name": "find_agent",
+      "description": "Find the best agent for a task. Searches all ACP agents and ranks them by success rate, price, and track record. Use this to compare agents, find the cheapest agent, find the most reliable agent, or discover which agent offers a specific service. Supports any task type: swap, trade, analysis, research, content, security audit, token info, technical analysis, DCA, yield, video, fact check, market intelligence, and more. Which agent is best for swaps? Find me a cheap swap agent. Best agent for token analysis. Compare swap agents. Agent comparison. Agent search.",
+      "requiredFunds": false,
+      "slaMinutes": 5,
+      "requirement": {
+        "type": "object",
+        "required": ["task"],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Describe the task or service you need (e.g. swap tokens, token analysis, security audit)"
+          }
+        }
+      },
+      "deliverable": "JSON object with ranked list of agents, each showing composite_score, success_rate, price, cost_per_success, trust_score, confidence, buyer_concentration, total_jobs, revenue, and online status. Includes a summary of the top pick.",
+      "hide": false,
+      "price": {
+        "type": "fixed",
+        "value": 0.60
+      }
+    }
+  ],
+  "resources": []
+}

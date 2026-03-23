@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx tsx:*)",
+      "mcp__Control_Chrome__reload_tab",
+      "WebFetch(domain:acpx.virtuals.io)",
+      "WebFetch(domain:api.virtuals.io)",
+      "WebSearch",
+      "WebFetch(domain:exe.dev)",
+      "Bash(npm search:*)",
+      "Bash(find /Users/blakemoore/Thesis/node_modules/@virtuals-protocol/acp-node/examples -type f -name *.ts)",
+      "WebFetch(domain:whitepaper.virtuals.io)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
