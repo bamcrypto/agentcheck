@@ -1,0 +1,10 @@
+[
+  {
+    "name": "check_deployer",
+    "description": "Check the reputation of a token's deployer wallet. Returns deployer risk score, GoPlus security flags (honeypot creator, malicious contracts, phishing, money laundering, mixer usage, sanctions), wallet age, contract deployment count, deployment velocity. Use before interacting with any new token. Deployer check. Deployer reputation. Is deployer safe? Rug pull check. Deployer history. Wallet reputation.",
+    "price": 0.10,
+    "slaMinutes": 1,
+    "requirement": "{\"type\":\"object\",\"required\":[\"token\"],\"properties\":{\"token\":{\"type\":\"string\",\"description\":\"Token contract address to trace deployer\"},\"chain\":{\"type\":\"string\",\"description\":\"Chain: base (default), ethereum, bsc\"}}}",
+    "deliverable": "{\"type\":\"object\",\"properties\":{\"risk_score\":{\"type\":\"number\"},\"risk_level\":{\"type\":\"string\"},\"deployer_address\":{\"type\":\"string\"},\"goplus_flags\":{\"type\":\"object\"},\"profile\":{\"type\":\"object\"},\"verdict\":{\"type\":\"string\"}}}"
+  }
+]

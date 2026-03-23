@@ -1,0 +1,10 @@
+[
+  {
+    "name": "check_sentiment",
+    "description": "Check social sentiment and community momentum for any token. Returns sentiment score (0-100), momentum trend, community metrics (Reddit, Telegram, social links), developer activity (GitHub commits, stars, PRs), crowd voting sentiment, and market fear/greed context. Is there hype? Is the community active? Social sentiment check. Token sentiment. Community analysis. Social momentum. Is this token trending?",
+    "price": 0.10,
+    "slaMinutes": 1,
+    "requirement": "{\"type\":\"object\",\"required\":[\"token\"],\"properties\":{\"token\":{\"type\":\"string\",\"description\":\"Token contract address or symbol\"},\"chain\":{\"type\":\"string\",\"description\":\"Chain: base (default), ethereum, bsc\"}}}",
+    "deliverable": "{\"type\":\"object\",\"properties\":{\"sentiment_score\":{\"type\":\"number\"},\"sentiment_level\":{\"type\":\"string\"},\"momentum\":{\"type\":\"string\"},\"community\":{\"type\":\"object\"},\"developer\":{\"type\":\"object\"},\"verdict\":{\"type\":\"string\"}}}"
+  }
+]

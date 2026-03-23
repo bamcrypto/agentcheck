@@ -8,6 +8,8 @@
     "start": "tsx src/server.ts",
     "start:tokencheck": "tsx src/tokencheck/server.ts",
     "scan": "tsx src/tokencheck/cli.ts",
+    "scan:deployer": "tsx src/deployercheck/cli.ts",
+    "scan:sentiment": "tsx src/sentimentcheck/cli.ts",
     "check": "tsx src/index.ts check",
     "find": "tsx src/index.ts find",
     "offerings": "tsx src/index.ts offerings",
